@@ -21,15 +21,13 @@ export const userFindByRefreshToken = (refresh_token) => {
   });
 };
 
-export const userInsert = ({ social_type }) => {
-  return createPromise(`INSERT INTO user (social_type) VALUE (?)`, [
-    social_type,
-  ]);
+export const userInsert = ({}) => {
+  return createPromise(`INSERT INTO user`, []);
 };
 
 export const userUpdateRefreshToken = ({ user_no, refresh_token }) => {
   return createPromise(`UPDATE user SET refresh_token=? WHERE user_no=?`, [
-    refresh_token,
+    vn(refresh_token),
     user_no,
   ]);
 };

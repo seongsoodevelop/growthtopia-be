@@ -7,7 +7,9 @@ import { userProfileFind } from "./mysql/userProfile.js";
 
 dotenv.config();
 
-const jwt_secret = process.env.JWT_SECRET;
+const jwt_secret_access = process.env.JWT_SECRET_ACCESS;
+const jwt_secret_refresh = process.env.JWT_SECRET_REFRESH;
+const jwt_secret_meta = process.env.JWT_SECRET_META;
 
 export const generateAccessToken = (userProfile) => {
   return new Promise((resolve, reject) => {
@@ -17,7 +19,7 @@ export const generateAccessToken = (userProfile) => {
     };
     jwt.sign(
       payload,
-      jwt_secret,
+      jwt_secret_access,
       {
         expiresIn: "1h",
       },
@@ -36,7 +38,7 @@ export const generateRefreshToken = () => {
     };
     jwt.sign(
       payload,
-      jwt_secret,
+      jwt_secret_refresh,
       {
         expiresIn: "7d",
       },
@@ -48,9 +50,29 @@ export const generateRefreshToken = () => {
   });
 };
 
-export const decodeToken = (token) => {
+export const generateTicketToken = (userProfile) => {
   return new Promise((resolve, reject) => {
-    jwt.verify(token, jwt_secret, (error, decoded) => {
+    const payload = {
+      user_no: userProfile.user_no,
+      nickname: userProfile.nickname,
+    };
+    jwt.sign(
+      payload,
+      jwt_secret_meta,
+      {
+        expiresIn: "1h",
+      },
+      (error, token) => {
+        if (error) reject(error);
+        resolve(token);
+      }
+    );
+  });
+};
+
+export const decodeToken = (token, secret) => {
+  return new Promise((resolve, reject) => {
+    jwt.verify(token, secret, (error, decoded) => {
       if (error) reject(error);
       resolve(decoded);
     });
@@ -65,14 +87,14 @@ export const jwtMiddleware = async (ctx, next) => {
       return next();
     }
 
-    const refreshDecoded = await decodeToken(refreshToken);
+    const refreshDecoded = await decodeToken(refreshToken, jwt_secret_refresh);
     if (process.env.VERSION !== refreshDecoded.version) {
       throw new Error("버전 맞지 않음");
     }
     let accessDecoded = null;
 
     try {
-      accessDecoded = await decodeToken(accessToken);
+      accessDecoded = await decodeToken(accessToken, jwt_secret_access);
     } catch (e) {
       // 만료
       try {
@@ -86,7 +108,10 @@ export const jwtMiddleware = async (ctx, next) => {
             getCookieSecureOptions(process.env.NODE_ENV === "production")
           );
 
-          accessDecoded = await decodeToken(freshAccessToken);
+          accessDecoded = await decodeToken(
+            freshAccessToken,
+            jwt_secret_access
+          );
         } else {
           throw new Error("유저 없음");
         }
