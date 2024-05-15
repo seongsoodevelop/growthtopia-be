@@ -22,7 +22,7 @@ export const userFindByRefreshToken = (refresh_token) => {
 };
 
 export const userInsert = ({}) => {
-  return createPromise(`INSERT INTO user`, []);
+  return createPromise(`INSERT INTO user VALUE ()`, []);
 };
 
 export const userUpdateRefreshToken = ({ user_no, refresh_token }) => {

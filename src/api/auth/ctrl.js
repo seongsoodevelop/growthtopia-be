@@ -5,6 +5,9 @@ import {
 } from "#lib/mysql/authSocial.js";
 import { userInsert, userUpdateRefreshToken } from "#lib/mysql/user.js";
 import { userProfileFind, userProfileInsert } from "#lib/mysql/userProfile.js";
+import { userMetaInsert } from "#lib/mysql/userMeta.js";
+import { workSpaceInsert } from "#lib/mysql/workSpace.js";
+import { workSpaceRelUserInsert } from "#lib/mysql/workSpaceRelUser.js";
 
 import { generateAccessToken, generateRefreshToken } from "#lib/token.js";
 import { getCookieSecureOptions } from "#lib/option/cookieOptions.js";
@@ -12,18 +15,25 @@ import { getCookieSecureOptions } from "#lib/option/cookieOptions.js";
 import { kakaoToken, kakaoUser } from "#lib/kakaoTools.js";
 
 import dotenv from "dotenv";
-import { userMetaInsert } from "#lib/mysql/userMeta.js";
+import { workTaskFind } from "#lib/mysql/workTask.js";
 
 dotenv.config();
 
 export const sessionHi = async (ctx, next) => {
   try {
     if (ctx.request.user) {
+      let userProfile = await userProfileFind(ctx.request.user.user_no);
+
+      if (userProfile.work_task_id) {
+        const task = await workTaskFind(userProfile.work_task_id);
+        userProfile.work_task = task;
+      }
+
       ctx.body = {
         loggedData: {
           user_no: ctx.request.user.user_no,
-          nickname: ctx.request.user.nickname,
         },
+        userProfile,
       };
     } else {
       throw new Error("인사 실패");
@@ -88,6 +98,15 @@ export const socialKakao = async (ctx, next) => {
         user_no: userInsertResponse.insertId,
       });
 
+      const workSpaceInsertResponse = await workSpaceInsert({
+        name: `inquirist${userInsertResponse.insertId}'s workspace`,
+      });
+      const workSpaceRelUserInsertResponse = await workSpaceRelUserInsert({
+        space_id: workSpaceInsertResponse.insertId,
+        user_no: userInsertResponse.insertId,
+        order: 0,
+      });
+
       authSocial = await authSocialFindExternal(SOCIAL_TYPE.KAKAO, kakaoId);
     }
 
@@ -114,6 +133,7 @@ export const socialKakao = async (ctx, next) => {
 
     ctx.body = {};
   } catch (e) {
+    console.log(e);
     ctx.throw(400, e.message);
   }
 };

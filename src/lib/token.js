@@ -15,7 +15,6 @@ export const generateAccessToken = (userProfile) => {
   return new Promise((resolve, reject) => {
     const payload = {
       user_no: userProfile.user_no,
-      nickname: userProfile.nickname,
     };
     jwt.sign(
       payload,
@@ -54,7 +53,6 @@ export const generateTicketToken = (userProfile) => {
   return new Promise((resolve, reject) => {
     const payload = {
       user_no: userProfile.user_no,
-      nickname: userProfile.nickname,
     };
     jwt.sign(
       payload,
