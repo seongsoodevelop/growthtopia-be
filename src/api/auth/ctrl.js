@@ -16,6 +16,9 @@ import { kakaoToken, kakaoUser } from "#lib/kakaoTools.js";
 
 import dotenv from "dotenv";
 import { workTaskFind } from "#lib/mysql/workTask.js";
+import { metaPropertyInsert } from "#lib/mysql/metaProperty.js";
+import { generateStarterPropertyData } from "#lib/meta/metaPropertyLib.js";
+import { metaPropertyRightInsert } from "#lib/mysql/metaPropertyRight.js";
 
 dotenv.config();
 
@@ -32,6 +35,7 @@ export const sessionHi = async (ctx, next) => {
       ctx.body = {
         loggedData: {
           user_no: ctx.request.user.user_no,
+          nickname: userProfile.nickname,
         },
         userProfile,
       };
@@ -94,9 +98,6 @@ export const socialKakao = async (ctx, next) => {
         email: email,
         phone_number: phoneNumber,
       });
-      const userMetaInsertResponse = await userMetaInsert({
-        user_no: userInsertResponse.insertId,
-      });
 
       const workSpaceInsertResponse = await workSpaceInsert({
         name: `inquirist${userInsertResponse.insertId}'s workspace`,
@@ -104,7 +105,24 @@ export const socialKakao = async (ctx, next) => {
       const workSpaceRelUserInsertResponse = await workSpaceRelUserInsert({
         space_id: workSpaceInsertResponse.insertId,
         user_no: userInsertResponse.insertId,
-        order: 0,
+        rel_order: 0,
+      });
+
+      const metaPropertyInsertResponse = await metaPropertyInsert({
+        position_x: 0,
+        position_y: 0,
+        position_z: 0,
+        data: generateStarterPropertyData(),
+      });
+      const metaPropertyRightInsertResponse = await metaPropertyRightInsert({
+        user_no: userInsertResponse.insertId,
+        property_id: metaPropertyInsertResponse.insertId,
+        right_level: 100,
+      });
+
+      const userMetaInsertResponse = await userMetaInsert({
+        user_no: userInsertResponse.insertId,
+        home_property_id: metaPropertyInsertResponse.insertId,
       });
 
       authSocial = await authSocialFindExternal(SOCIAL_TYPE.KAKAO, kakaoId);
@@ -133,7 +151,6 @@ export const socialKakao = async (ctx, next) => {
 
     ctx.body = {};
   } catch (e) {
-    console.log(e);
     ctx.throw(400, e.message);
   }
 };

@@ -11,8 +11,11 @@ export const userMetaFind = (user_no) => {
   });
 };
 
-export const userMetaInsert = ({ user_no }) => {
-  return createPromise(`INSERT INTO user_meta (user_no) VALUE (?)`, [user_no]);
+export const userMetaInsert = ({ user_no, home_property_id }) => {
+  return createPromise(
+    `INSERT INTO user_meta (user_no, home_property_id) VALUE (?, ?)`,
+    [user_no, home_property_id]
+  );
 };
 
 export const userMetaUpdateTicketToken = ({ user_no, ticket_token }) => {

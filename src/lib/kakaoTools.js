@@ -11,6 +11,7 @@ export const kakaoToken = async (code, redirect) => {
       {
         grant_type: "authorization_code",
         client_id: process.env.KAKAO_REST_KEY,
+        client_secret: process.env.KAKAO_CLIENT_SECRET,
         code: code,
         redirect_uri: redirect,
       },
@@ -22,6 +23,7 @@ export const kakaoToken = async (code, redirect) => {
     );
     return response.data;
   } catch (e) {
+    console.log(e);
     throw new Error(e.message);
   }
 };
@@ -38,7 +40,10 @@ export const kakaoUser = async (accessToken) => {
         },
       }
     );
-    return response.data;
+    return {
+      ...response.data,
+      kakao_account: { ...response.data.kakao_account },
+    };
   } catch (e) {
     throw new Error(e.message);
   }
